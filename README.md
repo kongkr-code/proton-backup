@@ -41,7 +41,7 @@ Still in the same shell, run:
 proton-drive filesystem list /my-files 
 It should print your Drive's root contents without asking you to log in again. If it does ask you to log in again, the session wasn't saved correctly — redo the previous two steps. Once it works, type exit to leave this temporary shell.
 
-#Confirm it works the way cron will use it
+# Confirm it works the way cron will use it
 Open a completely new terminal (simulating exactly what cron will do later) and run: 
 dbus-run-session -- sh -c "echo -n 'YourChosenPassword' | gnome-keyring-daemon --daemonize --login; proton-drive filesystem list /my-files" 
 
