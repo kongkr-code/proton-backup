@@ -47,3 +47,6 @@ dbus-run-session -- sh -c "echo -n 'YourChosenPassword' | gnome-keyring-daemon -
 
 If this also returns your file listing without prompting for login, everything is correctly wired together — you're ready to drop in the backup script itself, put your chosen password into its KEYRING_PASS variable, chmod +x it, and set up the cron job.
 
+# Edit the script
+Insert the keyring and set the local backup directory, and you are set to go.
+
