@@ -67,11 +67,6 @@ Open a completely new terminal (simulating exactly what cron will do later) and 
 dbus-run-session -- sh -c "echo -n 'YourChosenPassword' | gnome-keyring-daemon --daemonize --login; proton-drive filesystem list /my-files" 
 ```
 
-If this also returns your file listing without prompting for login, everything is correctly wired together — you're ready to drop in the backup script itself, put your chosen password into its KEYRING_PASS variable, chmod +x it, and set up the cron job.
-
-## Edit the script
-Insert the keyring and set the local backup directory, and you are set to go.
-
 ```bash
 KEYRING_PASS="YourChosenPassword"
 LOCAL_BACKUP_DIR="/your/local/backup"
