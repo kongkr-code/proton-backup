@@ -1,3 +1,9 @@
+## Proton Drive Proxmox LXC Backup Script
+This script will automate the backup of LXC containers from Proxmox to Proton Drive via the CLI.
+It will check for existing backups and skip them, and will delete old backups according to the retention setting.
+
+To be able to login to Proton Drive, there is need for a D-bus Keyring, a password of your choosing, to associate with the Proton Drive login.
+
 ## Install system dependencies
 Run:
 ```bash
@@ -29,8 +35,8 @@ dbus-run-session -- bash
 This drops you into a subshell with a proper D-Bus session active. 
 All the remaining setup steps happen inside this same shell — don't exit until told to.
 
-## Create and unlock the keyringInside that shell 
-Run: 
+## Create and unlock the keyring 
+Inside that shell run: 
 ```bash
 echo -n 'YourChosenPassword' | gnome-keyring-daemon --daemonize --login 
 ```
