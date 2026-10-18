@@ -79,6 +79,8 @@ Open a completely new terminal (simulating exactly what cron will do) and run:
 ```bash
 dbus-run-session -- sh -c "echo -n 'YourChosenPassword' | gnome-keyring-daemon --daemonize --login; proton-drive filesystem list /my-files" 
 ```
+If this also returns your file listing without prompting for login, everything is correctly wired together.
+You can now drop in the script to your working folder, put your chosen password into its KEYRING_PASS variable, chmod +x it, and set up the cron job.
 
 ```bash
 KEYRING_PASS="YourChosenPassword"
