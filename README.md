@@ -67,7 +67,12 @@ Still in the same sub-shell, run:
 ```bash
 proton-drive filesystem list /my-files 
 ```
-It should print your Drive's root contents without asking you to log in again. If it does ask you to log in again, the session wasn't saved correctly — redo the previous two steps. Once it works, type exit to leave this sub-shell.
+It should print your Drive's root contents without asking you to log in again. If it does ask you to log in again, the session wasn't saved correctly — redo the previous two steps. 
+Once it works, type: 
+```bash
+exit
+```
+to leave this sub-shell.
 
 ## Confirm it works the way cron will use it
 Open a completely new terminal (simulating exactly what cron will do) and run: 
