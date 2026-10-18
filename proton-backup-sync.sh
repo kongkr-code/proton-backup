@@ -2,7 +2,7 @@
 set -uo pipefail
 
 # --- CHANGE PASSWORD to keyring made ---
-KEYRING_PASS="PASSWORD"
+KEYRING_PASS="YourChosenPassword"
 
 # CHANGE LOCAL BACKUP FOLDER Proxmox dumps everything (all LXCs, flat) into a "dump" subfolder
 LOCAL_BACKUP_DIR="/your/local/backup"
