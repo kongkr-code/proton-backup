@@ -1,5 +1,5 @@
 ## Proton Drive Proxmox LXC Backup Script
-This script will automate the backup of LXC containers from Proxmox to Proton Drive via the CLI.
+This script will automate the uploading of LXC container backups from Proxmox to Proton Drive via the CLI.
 It will check for existing backups and skip them, and will delete old backups according to the retention setting.
 
 To be able to login to Proton Drive, there is need for a D-bus Keyring, a password of your choosing, to associate with the Proton Drive login.
