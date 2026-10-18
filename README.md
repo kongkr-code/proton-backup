@@ -1,8 +1,11 @@
 ## Proton Drive Proxmox LXC Backup Script
-This script will automate the uploading of LXC container backups from Proxmox to Proton Drive via the CLI.
+This script can be used to automate the uploading of LXC-container backups from Proxmox to Proton Drive via the CLI-tool released by Proton.
 It will check for existing backups and skip them, and will delete old backups according to the retention setting.
 
 To be able to login to Proton Drive, there is need for a D-bus Keyring, a password of your choosing, to associate with the Proton Drive login.
+
+Once properly setup, this script can be run manually (advised to do a dry run first) 
+It can also be put into a cron timer (still in testing)
 
 ## Install system dependencies
 Run:
@@ -10,7 +13,11 @@ Run:
 apt update && apt install -y dbus-user-session gnome-keyring jq curl
 ``` 
 
-What each one is for: dbus-user-session gives you dbus-run-session (needed to create a proper session for the keyring daemon on a headless server with no desktop). gnome-keyring provides gnome-keyring-daemon, which stores your Proton login session securely. jq is what the backup script uses to parse the JSON file listings from proton-drive. curl is just for downloading the CLI binary in the next step (usually already present on Proxmox).
+What each one is for: 
+- dbus-user-session gives you dbus-run-session (needed to create a proper session for the keyring daemon on a headless server with no desktop).
+- gnome-keyring provides gnome-keyring-daemon, which stores your Proton login session securely. 
+- jq is what the backup script uses to parse the JSON file listings from proton-drive. 
+- curl is just for downloading the CLI binary in the next step (usually already present on Proxmox).
 
 ## Install the Proton Drive CLI itself
 Go to proton.me/drive/download on any browser, find the CLI download for Linux, and get the download URL (or use the wrapper repo's install helper if you prefer). 
@@ -24,7 +31,7 @@ Verify with:
 proton-drive --help 
 ```
 
-It should print the usage text (filesystem list/upload/download/etc.) we've already seen.
+It should print the usage text (filesystem list/upload/download/etc.)
 
 ## Start a D-Bus session
 Run: 
@@ -32,8 +39,8 @@ Run:
 dbus-run-session -- bash 
 ```
 
-This drops you into a subshell with a proper D-Bus session active. 
-All the remaining setup steps happen inside this same shell — don't exit until told to.
+This drops you into a sub-shell with a proper D-Bus session active. 
+Several of the remaining setup steps happen inside this same shell — don't exit until told to.
 
 ## Create and unlock the keyring 
 Inside that shell run: 
@@ -41,12 +48,11 @@ Inside that shell run:
 echo -n 'YourChosenPassword' | gnome-keyring-daemon --daemonize --login 
 ```
 
-Since this is a brand new machine, no keyring file exists yet at ~/.local/share/keyrings/login.keyring (or /root/.local/share/keyrings/login.keyring if you're root). 
-This command creates it on the spot, using 'YourChosenPassword' as its permanent unlock password from now on. 
-Store that password somewhere safe — it's what goes into KEYRING_PASS in the backup script.
+This command creates a keyring file, using 'YourChosenPassword' as its permanent unlock password from now on. 
+Store that password somewhere safe — it's what goes into KEYRING_PASS in the backup script later.
 
 ## Log in to Proton Drive
-Still in the same shell, run: 
+Still in the same sub-shell, run: 
 ```bash
 proton-drive auth login 
 ```
@@ -55,14 +61,14 @@ This starts a browser-based login — it'll print a URL (and possibly a code) to
 Log in with your actual Proton account there. If Proton throws a CAPTCHA at you, the CLI will print instructions for a manual token-copy step — just follow those. Once it succeeds, your session gets saved into the keyring you just created.
 
 ## Verify the session actually persisted
-Still in the same shell, run: 
+Still in the same sub-shell, run: 
 ```bash
 proton-drive filesystem list /my-files 
 ```
-It should print your Drive's root contents without asking you to log in again. If it does ask you to log in again, the session wasn't saved correctly — redo the previous two steps. Once it works, type exit to leave this temporary shell.
+It should print your Drive's root contents without asking you to log in again. If it does ask you to log in again, the session wasn't saved correctly — redo the previous two steps. Once it works, type exit to leave this sub-shell.
 
 ## Confirm it works the way cron will use it
-Open a completely new terminal (simulating exactly what cron will do later) and run: 
+Open a completely new terminal (simulating exactly what cron will do) and run: 
 ```bash
 dbus-run-session -- sh -c "echo -n 'YourChosenPassword' | gnome-keyring-daemon --daemonize --login; proton-drive filesystem list /my-files" 
 ```
