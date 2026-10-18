@@ -7,6 +7,8 @@ To be able to login to Proton Drive, there is need for a D-bus Keyring, a passwo
 Once properly setup, this script can be run manually (advised to do a dry run first) 
 It can also be put into a cron timer (still in testing)
 
+Where you install this, is up to you, as long as it has access to the internet and to your local LXC-container backup folder.
+
 ## Install system dependencies
 Run:
 ```bash
