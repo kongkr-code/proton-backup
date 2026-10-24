@@ -43,11 +43,19 @@ echo "[$(date)] Starting Backup Sync to Proton Drive ..."
 
 run_proton() {
   dbus-run-session -- sh -c "
-    export \$(echo -n '$KEYRING_PASS' | gnome-keyring-daemon --daemonize --login)
-    export \$(gnome-keyring-daemon --start)
+    set -a
+    eval \"\$(echo -n '$KEYRING_PASS' | gnome-keyring-daemon --daemonize --login)\"
+    eval \"\$(gnome-keyring-daemon --start)\"
+    set +a
     proton-drive $*
   "
 }
+
+# Pre-flight: abort loudly if we're not logged in
+if ! run_proton filesystem list "'$REMOTE_TARGET_DIR'" --json > /dev/null 2>&1; then
+  echo "[$(date)] ABORT: proton-drive is not logged in (or Proton Drive is unreachable)."
+  exit 1
+fi
 
 # --- Progress bar helpers ---
 # The bar only appears when you run the script from a terminal. Under cron
