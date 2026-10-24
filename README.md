@@ -94,7 +94,7 @@ Other options
 ```bash
 # Retention: how many of the newest backup RUNS to keep, per container ID
 # (a "run" = the .log + .tar.zst + .tar.zst.notes trio sharing one timestamp)
-KEEP_N=2
+KEEP_N=3
 
 # Safety guards for the delete step
 MIN_LOCAL_FILES=1        # abort delete step if fewer local files than this exist (mount hiccup guard)
