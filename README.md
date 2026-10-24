@@ -5,7 +5,8 @@ It will check for existing backups and skip them, and will delete old backups ac
 To be able to login to Proton Drive, there is need for a D-bus Keyring, a password of your choosing, to associate with the Proton Drive login.
 
 Once properly setup, this script can be run manually (advised to do a dry run first) 
-It can also be put into a cron timer (still in testing)
+
+It can also be put into a cron timer (TESTING - SHOULD WORK NOW)
 
 Where you install this, is up to you, as long as it has access to the internet and to your local LXC-container backup folder.
 
