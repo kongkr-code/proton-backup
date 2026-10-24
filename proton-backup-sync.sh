@@ -49,6 +49,12 @@ run_proton() {
   "
 }
 
+# Pre-flight: abort loudly if we're not logged in
+if ! run_proton filesystem list "'$REMOTE_TARGET_DIR'" --json > /dev/null 2>&1; then
+  echo "[$(date)] ABORT: proton-drive is not logged in (or Proton Drive is unreachable)."
+  exit 1
+fi
+
 # --- Progress bar helpers ---
 # The bar only appears when you run the script from a terminal. Under cron
 # there is no terminal, so nothing is drawn and the log just gets plain lines.
