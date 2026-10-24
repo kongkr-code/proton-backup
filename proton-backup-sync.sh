@@ -3,6 +3,7 @@ set -uo pipefail
 
 # --- CHANGE PASSWORD to keyring made ---
 KEYRING_PASS="YourChosenPassword"
+export KEYRING_PASS   # passed to the keyring via the environment, so it never shows up in 'ps'
 
 # CHANGE LOCAL BACKUP FOLDER Proxmox dumps everything (all LXCs, flat) into a "dump" subfolder
 LOCAL_BACKUP_DIR="/your/local/backup"
@@ -15,7 +16,7 @@ LOG_FILE="/var/log/proton-backup.log"
 
 # Retention: how many of the newest backup RUNS to keep, per container ID
 # (a "run" = the .log + .tar.zst + .tar.zst.notes trio sharing one timestamp)
-KEEP_N=2
+KEEP_N=3
 
 # Safety guards for the delete step
 MIN_LOCAL_FILES=1        # abort delete step if fewer local files than this exist (mount hiccup guard)
@@ -41,19 +42,28 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 
 echo "[$(date)] Starting Backup Sync to Proton Drive ..."
 
+# Prevent overlapping runs (a big upload can outlast the cron interval)
+exec 9>/var/lock/proton-backup.lock
+if ! flock -n 9; then
+  echo "[$(date)] Another run is still in progress, exiting."
+  exit 0
+fi
+
+# Fds 3 (terminal) and 9 (lock) are closed for the child process so the
+# keyring daemon can't inherit them and hold the lock or your SSH session open.
 run_proton() {
   dbus-run-session -- sh -c "
     set -a
-    eval \"\$(echo -n '$KEYRING_PASS' | gnome-keyring-daemon --daemonize --login)\"
+    eval \"\$(echo -n \"\$KEYRING_PASS\" | gnome-keyring-daemon --daemonize --login)\"
     eval \"\$(gnome-keyring-daemon --start)\"
     set +a
     proton-drive $*
-  "
+  " 3>&- 9>&-
 }
 
-# Pre-flight: abort loudly if we're not logged in
+# Pre-flight: abort loudly if we can't reach the remote folder
 if ! run_proton filesystem list "'$REMOTE_TARGET_DIR'" --json > /dev/null 2>&1; then
-  echo "[$(date)] ABORT: proton-drive is not logged in (or Proton Drive is unreachable)."
+  echo "[$(date)] ABORT: could not list $REMOTE_TARGET_DIR (not logged in, Proton Drive unreachable, or the folder doesn't exist yet)."
   exit 1
 fi
 
@@ -111,6 +121,7 @@ start_ticker() {   # usage: start_ticker DONE TOTAL "prefix" "suffix"
     # exits on its own if the main script dies, so it can never be orphaned
     while sleep 1 && kill -0 "$$" 2>/dev/null; do
       now=$(tx_bytes); rate=$(( now - prev )); prev=$now
+      [ "$rate" -ge 0 ] || rate=0               # a failed counter read must not show a negative speed
       smooth=$(( (smooth * 2 + rate) / 3 ))     # light smoothing so it isn't jumpy
       draw_progress "$1" "$2" "$3  $(human "$smooth")/s  $4"
     done
@@ -189,6 +200,8 @@ if [ "${#PRE_REMOTE[@]}" -gt 0 ]; then
     end_progress
     echo "[$(date)] Per-file upload finished: $(( TOTAL_FILES - UPLOAD_FAILS )) ok, $UPLOAD_FAILS failed, $(human "$DONE_BYTES") in $(fmt_dur "$run_secs") (avg $(human $(( DONE_BYTES / run_secs )))/s)."
   fi
+else
+  echo "[$(date)] Remote listing empty or unreadable, skipping the per-file stage (bulk upload below still runs)."
 fi
 
 # 1b. Original bulk upload, unchanged. It uploads the whole parent folder (so
@@ -203,7 +216,7 @@ echo "[$(date)] File Transfer Complete."
 # 2. Retention step: keep only the newest KEEP_N backup runs PER CONTAINER
 echo "[$(date)] Applying per-container retention policy (keep last $KEEP_N runs each)..."
 
-# Sanity check: don't run retention if the local dumped folder looks empty —
+# Sanity check: don't run retention if the local dump folder looks empty —
 # that usually means the mount isn't up, and we don't want to start pruning
 # the remote based on a false read of "nothing local exists".
 LOCAL_COUNT=$(find "$LOCAL_DUMP_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l)
@@ -212,13 +225,18 @@ if [ "$LOCAL_COUNT" -lt "$MIN_LOCAL_FILES" ]; then
   exit 1
 fi
 
-# --- Get remote file list from the 'dumped' subfolder ---
+# --- Get remote file list from the 'dump' subfolder ---
 # NOTE: verify the exact JSON field name proton-drive returns by running:
 #   proton-drive filesystem list "$REMOTE_DUMP_DIR" --json | jq .
 REMOTE_JSON=$(run_proton filesystem list "'$REMOTE_DUMP_DIR'" --json)
 
 if [ -z "$REMOTE_JSON" ]; then
   echo "[$(date)] SAFETY ABORT: could not retrieve remote file listing. Skipping retention step."
+  exit 1
+fi
+
+if ! echo "$REMOTE_JSON" | jq -e 'type=="array"' >/dev/null 2>&1; then
+  echo "[$(date)] SAFETY ABORT: remote listing wasn't valid JSON. Skipping retention step."
   exit 1
 fi
 
