@@ -42,10 +42,9 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 echo "[$(date)] Starting Backup Sync to Proton Drive ..."
 
 run_proton() {
-  # Runs a proton-drive command inside a fresh keyring session.
-  # Usage: run_proton filesystem list "$REMOTE_TARGET_DIR" --json
   dbus-run-session -- sh -c "
-    echo -n '$KEYRING_PASS' | gnome-keyring-daemon --daemonize --login > /dev/null
+    export \$(echo -n '$KEYRING_PASS' | gnome-keyring-daemon --daemonize --login)
+    export \$(gnome-keyring-daemon --start)
     proton-drive $*
   "
 }
